@@ -10,6 +10,8 @@
 #define GREEN ImColor(0, 255, 0, 255)
 #define BLACK ImColor(0, 0, 0, 255)
 #define WHITE ImColor(255, 255, 255, 255)
+#define GREY ImColor(170, 170, 170, 255)
+#define DARKGREY ImColor(85, 85, 85, 255)
 #define YELLOW ImColor(255, 255, 0, 255)
 
 using namespace placeholders;

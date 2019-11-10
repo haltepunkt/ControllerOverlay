@@ -1,6 +1,6 @@
 #include "ControllerOverlay.h"
 
-BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.0", 0)
+BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.1", 0)
 
 /*
 	https://docs.unrealengine.com/udk/Three/KeyBinds.html
@@ -23,8 +23,8 @@ BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.0", 0)
 	XboxTypeS_RightShoulder - Right Shoulder
 	XboxTypeS_LeftTrigger - Left Trigger
 	XboxTypeS_RightTrigger - Right Trigger
-	XboxTypeS_LeftThumbstick - Left Analogue Stick Button
-	XboxTypeS_RightThumbstick - Right Analogue Stick Button
+	XboxTypeS_LeftThumbStick - Left Analogue Stick Button
+	XboxTypeS_RightThumbStick - Right Analogue Stick Button
 
 	Gamepad_LeftStick_Left - Left Analogue Stick Left
 	Gamepad_LeftStick_Right - Left Analogue Stick Right
@@ -42,14 +42,15 @@ void ControllerOverlay::onLoad()
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
 		}, 1);
 
-	inputs["XboxTypeS_A"] = { 0, false, GREEN, "A"};
-	inputs["XboxTypeS_B"] = { 0, false, RED, "B"};
-	inputs["XboxTypeS_X"] = { 0, false, BLUE, "X"};
-	inputs["XboxTypeS_Y"] = { 0, false, YELLOW, "Y"};
-	inputs["XboxTypeS_LeftShoulder"] = { 0, false, WHITE, "LB"};
-	inputs["XboxTypeS_RightShoulder"] = { 0, false, WHITE, "RB"};
-	inputs["XboxTypeS_LeftTrigger"] = { 0, false, WHITE, "LT"};
-	inputs["XboxTypeS_RightTrigger"] = { 0, false, WHITE, "RT"};
+	inputs["XboxTypeS_A"] = { 0, false, GREEN, "A" };
+	inputs["XboxTypeS_B"] = { 0, false, RED, "B" };
+	inputs["XboxTypeS_X"] = { 0, false, BLUE, "X" };
+	inputs["XboxTypeS_Y"] = { 0, false, YELLOW, "Y" };
+	inputs["XboxTypeS_LeftShoulder"] = { 0, false, WHITE, "LB" };
+	inputs["XboxTypeS_RightShoulder"] = { 0, false, WHITE, "RB" };
+	inputs["XboxTypeS_LeftTrigger"] = { 0, false, WHITE, "LT" };
+	inputs["XboxTypeS_RightTrigger"] = { 0, false, WHITE, "RT" };
+	inputs["XboxTypeS_LeftThumbStick"] = { 0, false, GREY, "LS" };
 
 	for (const pair<const string, Input>& input : inputs) {
 		cvarManager->registerCvar("var_" + input.first, input.first).addOnValueChanged([this](string old, CVarWrapper now) {
@@ -192,7 +193,8 @@ void ControllerOverlay::RenderImGui(ServerWrapper server)
 
 	drawList->AddCircle(leftStickCenter, 24, WHITE, 32, 2);
 
-	drawList->AddCircleFilled(ImVec2(leftStickCenter.x + (controllerInput.Steer * 8), leftStickCenter.y + (controllerInput.Pitch * 8)), 20, WHITE, 32);
+	drawList->AddCircleFilled(ImVec2(leftStickCenter.x + (controllerInput.Steer * 8), leftStickCenter.y + (controllerInput.Pitch * 8)), 20, (inputs["XboxTypeS_LeftThumbStick"].pressed ? GREY : WHITE), 32);
+	drawList->AddCircleFilled(ImVec2(leftStickCenter.x + (controllerInput.Steer * 8), leftStickCenter.y + (controllerInput.Pitch * 8)), 16, (inputs["XboxTypeS_LeftThumbStick"].pressed ? DARKGREY : GREY), 32);
 
 	float buttonRadius = 12;
 	ImVec2 buttonsCenter = ImVec2(leftStickCenter.x + 128, leftStickCenter.y);
