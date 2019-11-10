@@ -53,7 +53,7 @@ void ControllerOverlay::onLoad()
 
 	for (const pair<const string, Input>& input : inputs) {
 		cvarManager->registerCvar("var_" + input.first, input.first).addOnValueChanged([this](string old, CVarWrapper now) {
-			inputs[now.getStringValue()].index = gameWrapper->GetFNameIndexByString(now.getStringValue());;
+			inputs[now.getStringValue()].index = gameWrapper->GetFNameIndexByString(now.getStringValue());
 			});
 
 		cvarManager->getCvar("var_" + input.first).notify();
@@ -88,7 +88,7 @@ void ControllerOverlay::onTick(string eventName)
 			controllerInput.Steer = 0;
 			controllerInput.Pitch = 0;
 		}
-	}	
+	}
 }
 
 void ControllerOverlay::Render()
@@ -105,7 +105,7 @@ void ControllerOverlay::Render()
 		if (!server.IsNull()) {
 			if (!server.GetbMatchEnded()) {
 				ControllerOverlay::RenderImGui(server);
-			}	
+			}
 		}
 	}
 
