@@ -1,6 +1,6 @@
 #include "ControllerOverlay.h"
 
-BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.1", 0)
+BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.2", 0)
 
 /*
 	https://docs.unrealengine.com/udk/Three/KeyBinds.html
@@ -40,24 +40,61 @@ void ControllerOverlay::onLoad()
 {
 	gameWrapper->SetTimeout([this](GameWrapper* gameWrapper) {
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
-		}, 1);
+	}, 1);
 
-	inputs["XboxTypeS_A"] = { 0, false, GREEN, "A" };
-	inputs["XboxTypeS_B"] = { 0, false, RED, "B" };
-	inputs["XboxTypeS_X"] = { 0, false, BLUE, "X" };
-	inputs["XboxTypeS_Y"] = { 0, false, YELLOW, "Y" };
-	inputs["XboxTypeS_LeftShoulder"] = { 0, false, WHITE, "LB" };
-	inputs["XboxTypeS_RightShoulder"] = { 0, false, WHITE, "RB" };
-	inputs["XboxTypeS_LeftTrigger"] = { 0, false, WHITE, "LT" };
-	inputs["XboxTypeS_RightTrigger"] = { 0, false, WHITE, "RT" };
-	inputs["XboxTypeS_LeftThumbStick"] = { 0, false, GREY, "LS" };
+	cvarManager->registerCvar("controllerType", "xbox").addOnValueChanged([this](string old, CVarWrapper now) {
+		if (cvarManager->getCvar("controllerType").getStringValue() == "ps4") {
+			controllerType = ControllerOverlay::ControllerType::PS4;
+			
+			inputs["XboxTypeS_A"] = { 0, false, BLUE, "Cross" };
+			inputs["XboxTypeS_B"] = { 0, false, RED, "Circle" };
+			inputs["XboxTypeS_X"] = { 0, false, PURPLE, "Square" };
+			inputs["XboxTypeS_Y"] = { 0, false, DARKGREEN, "Triangle" };
+			inputs["XboxTypeS_LeftShoulder"] = { 0, false, WHITE, "L1" };
+			inputs["XboxTypeS_RightShoulder"] = { 0, false, WHITE, "R1" };
+			inputs["XboxTypeS_LeftTrigger"] = { 0, false, WHITE, "L2" };
+			inputs["XboxTypeS_RightTrigger"] = { 0, false, WHITE, "R2" };
+			inputs["XboxTypeS_LeftThumbStick"] = { 0, false, GREY, "L3" };
+		}
 
-	for (const pair<const string, Input>& input : inputs) {
-		cvarManager->registerCvar("var_" + input.first, input.first).addOnValueChanged([this](string old, CVarWrapper now) {
-			inputs[now.getStringValue()].index = gameWrapper->GetFNameIndexByString(now.getStringValue());
-			});
+		else {
+			controllerType = ControllerOverlay::ControllerType::Xbox;
 
-		cvarManager->getCvar("var_" + input.first).notify();
+			inputs["XboxTypeS_A"] = { 0, false, GREEN, "A" };
+			inputs["XboxTypeS_B"] = { 0, false, RED, "B" };
+			inputs["XboxTypeS_X"] = { 0, false, BLUE, "X" };
+			inputs["XboxTypeS_Y"] = { 0, false, YELLOW, "Y" };
+			inputs["XboxTypeS_LeftShoulder"] = { 0, false, WHITE, "LB" };
+			inputs["XboxTypeS_RightShoulder"] = { 0, false, WHITE, "RB" };
+			inputs["XboxTypeS_LeftTrigger"] = { 0, false, WHITE, "LT" };
+			inputs["XboxTypeS_RightTrigger"] = { 0, false, WHITE, "RT" };
+			inputs["XboxTypeS_LeftThumbStick"] = { 0, false, GREY, "LS" };
+		}
+
+		for (const pair<const string, Input>& input : inputs) {
+			cvarManager->registerCvar(input.first, input.first).addOnValueChanged([this](string old, CVarWrapper now) {
+				inputs[now.getStringValue()].index = gameWrapper->GetFNameIndexByString(now.getStringValue());
+				});
+
+			cvarManager->getCvar(input.first).notify();
+		}
+		
+		ofstream configurationFile;
+
+		configurationFile.open(configurationFilePath);
+
+		configurationFile << "controllerType \"" + cvarManager->getCvar("controllerType").getStringValue() + "\"";
+
+		configurationFile.close();
+		
+	});
+
+	if (ifstream(configurationFilePath)) {
+		cvarManager->loadCfg(configurationFilePath);
+	}
+
+	else {
+		cvarManager->getCvar("controllerType").notify();
 	}
 
 	gameWrapper->HookEvent("Function Engine.GameViewportClient.Tick", bind(&ControllerOverlay::onTick, this, placeholders::_1));
@@ -202,25 +239,61 @@ void ControllerOverlay::RenderImGui(ServerWrapper server)
 	map<string, ImVec2> buttonPositions;
 	map<string, ImVec2> buttonTextPositions;
 
-	buttonPositions["XboxTypeS_A"] = ImVec2(buttonsCenter.x, buttonsCenter.y + buttonRadius * 2);
-	buttonPositions["XboxTypeS_B"] = ImVec2(buttonsCenter.x + buttonRadius * 2, buttonsCenter.y);
-	buttonPositions["XboxTypeS_X"] = ImVec2(buttonsCenter.x - buttonRadius * 2, buttonsCenter.y);
-	buttonPositions["XboxTypeS_Y"] = ImVec2(buttonsCenter.x, buttonsCenter.y - buttonRadius * 2);
+	if (controllerType == ControllerOverlay::ControllerType::Xbox) {
+		buttonPositions["XboxTypeS_A"] = ImVec2(buttonsCenter.x, buttonsCenter.y + buttonRadius * 2);
+		buttonPositions["XboxTypeS_B"] = ImVec2(buttonsCenter.x + buttonRadius * 2, buttonsCenter.y);
+		buttonPositions["XboxTypeS_X"] = ImVec2(buttonsCenter.x - buttonRadius * 2, buttonsCenter.y);
+		buttonPositions["XboxTypeS_Y"] = ImVec2(buttonsCenter.x, buttonsCenter.y - buttonRadius * 2);
 
-	buttonTextPositions["XboxTypeS_A"] = ImVec2(3 + buttonPositions["XboxTypeS_A"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_A"].y - buttonRadius * 0.5f - 1);
-	buttonTextPositions["XboxTypeS_B"] = ImVec2(3 + buttonPositions["XboxTypeS_B"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_B"].y - buttonRadius * 0.5f - 1);
-	buttonTextPositions["XboxTypeS_X"] = ImVec2(3 + buttonPositions["XboxTypeS_X"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_X"].y - buttonRadius * 0.5f - 1);
-	buttonTextPositions["XboxTypeS_Y"] = ImVec2(3 + buttonPositions["XboxTypeS_Y"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_Y"].y - buttonRadius * 0.5f - 1);
+		buttonTextPositions["XboxTypeS_A"] = ImVec2(3 + buttonPositions["XboxTypeS_A"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_A"].y - buttonRadius * 0.5f - 1);
+		buttonTextPositions["XboxTypeS_B"] = ImVec2(3 + buttonPositions["XboxTypeS_B"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_B"].y - buttonRadius * 0.5f - 1);
+		buttonTextPositions["XboxTypeS_X"] = ImVec2(3 + buttonPositions["XboxTypeS_X"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_X"].y - buttonRadius * 0.5f - 1);
+		buttonTextPositions["XboxTypeS_Y"] = ImVec2(3 + buttonPositions["XboxTypeS_Y"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_Y"].y - buttonRadius * 0.5f - 1);
 
-	for (pair<string, ImVec2> buttonPosition : buttonPositions) {
-		if (inputs[buttonPosition.first].pressed) {
-			drawList->AddCircleFilled(buttonPosition.second, buttonRadius, inputs[buttonPosition.first].color, 32);
-			drawList->AddText(buttonTextPositions[buttonPosition.first], BLACK, inputs[buttonPosition.first].name.c_str());
+		for (pair<string, ImVec2> buttonPosition : buttonPositions) {
+			if (inputs[buttonPosition.first].pressed) {
+				drawList->AddCircleFilled(buttonPosition.second, buttonRadius, inputs[buttonPosition.first].color, 32);
+				drawList->AddText(buttonTextPositions[buttonPosition.first], BLACK, inputs[buttonPosition.first].name.c_str());
+			}
+
+			else {
+				drawList->AddCircle(buttonPosition.second, buttonRadius, inputs[buttonPosition.first].color, 32, 2);
+				drawList->AddText(buttonTextPositions[buttonPosition.first], inputs[buttonPosition.first].color, inputs[buttonPosition.first].name.c_str());
+			}
 		}
+	}
 
-		else {
-			drawList->AddCircle(buttonPosition.second, buttonRadius, inputs[buttonPosition.first].color, 32, 2);
-			drawList->AddText(buttonTextPositions[buttonPosition.first], inputs[buttonPosition.first].color, inputs[buttonPosition.first].name.c_str());
+	else if (controllerType == ControllerOverlay::ControllerType::PS4) {
+		buttonPositions["XboxTypeS_A"] = ImVec2(buttonsCenter.x, buttonsCenter.y + buttonRadius * 2);
+		buttonPositions["XboxTypeS_B"] = ImVec2(buttonsCenter.x + buttonRadius * 2, buttonsCenter.y);
+		buttonPositions["XboxTypeS_X"] = ImVec2(buttonsCenter.x - buttonRadius * 2, buttonsCenter.y);
+		buttonPositions["XboxTypeS_Y"] = ImVec2(buttonsCenter.x, buttonsCenter.y - buttonRadius * 2);
+
+		for (pair<string, ImVec2> buttonPosition : buttonPositions) {
+			if (inputs[buttonPosition.first].pressed) {
+				drawList->AddCircleFilled(buttonPosition.second, buttonRadius, WHITE, 32);
+			}
+
+			else {
+				drawList->AddCircle(buttonPosition.second, buttonRadius, WHITE, 32, 2);
+			}
+
+			if (buttonPosition.first == "XboxTypeS_A") {
+				drawList->AddLine(ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y - 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y + 5), inputs[buttonPosition.first].color, 2.f);
+				drawList->AddLine(ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y + 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y - 5), inputs[buttonPosition.first].color, 2.f);
+			}
+
+			else if (buttonPosition.first == "XboxTypeS_B") {
+				drawList->AddCircle(buttonPosition.second, buttonRadius - 6, inputs[buttonPosition.first].color, 16, 2);
+			}
+
+			else if (buttonPosition.first == "XboxTypeS_X") {
+				drawList->AddQuad(ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y - 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y - 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y + 5), ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y + 5), inputs[buttonPosition.first].color, 2.f);
+			}
+
+			else if (buttonPosition.first == "XboxTypeS_Y") {
+				drawList->AddTriangle(ImVec2(buttonPosition.second.x, buttonPosition.second.y - 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y + 4), ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y + 4), inputs[buttonPosition.first].color, 2.f);
+			}
 		}
 	}
 
