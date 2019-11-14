@@ -36,7 +36,7 @@ public:
 	void onTick(string eventName);
 
 	void Render();
-	void RenderImGui(ServerWrapper server);
+	void RenderImGui();
 	string GetMenuName();
 	string GetMenuTitle();
 	void SetImGuiContext(uintptr_t ctx);

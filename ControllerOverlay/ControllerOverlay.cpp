@@ -142,7 +142,7 @@ void ControllerOverlay::Render()
 
 		if (!server.IsNull()) {
 			if (!server.GetbMatchEnded()) {
-				ControllerOverlay::RenderImGui(server);
+				ControllerOverlay::RenderImGui();
 			}
 		}
 	}
@@ -152,13 +152,13 @@ void ControllerOverlay::Render()
 
 		if (!server.IsNull()) {
 			if (!server.GetbMatchEnded()) {
-				ControllerOverlay::RenderImGui(server);
+				ControllerOverlay::RenderImGui();
 			}
 		}
 	}
 }
 
-void ControllerOverlay::RenderImGui(ServerWrapper server)
+void ControllerOverlay::RenderImGui()
 {
 	ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(216, 156));
