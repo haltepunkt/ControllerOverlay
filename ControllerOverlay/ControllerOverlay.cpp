@@ -1,6 +1,6 @@
 #include "ControllerOverlay.h"
 
-BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.2", 0)
+BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.3", 0)
 
 /*
 	https://docs.unrealengine.com/udk/Three/KeyBinds.html
@@ -42,6 +42,18 @@ void ControllerOverlay::onLoad()
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
 	}, 1);
 
+	cvarManager->registerCvar("controllerSize", "1").addOnValueChanged([this](string old, CVarWrapper now) {
+		doubleSize = (cvarManager->getCvar("controllerSize").getStringValue() == "2");
+
+		writeCfg();
+	});
+	
+	cvarManager->registerCvar("controllerTransparency", "1.0").addOnValueChanged([this](string old, CVarWrapper now) {
+		controllerTransparency = cvarManager->getCvar("controllerTransparency").getFloatValue();
+
+		writeCfg();
+	});
+	
 	cvarManager->registerCvar("controllerType", "xbox").addOnValueChanged([this](string old, CVarWrapper now) {
 		if (cvarManager->getCvar("controllerType").getStringValue() == "ps4") {
 			controllerType = ControllerOverlay::ControllerType::PS4;
@@ -79,14 +91,7 @@ void ControllerOverlay::onLoad()
 			cvarManager->getCvar(input.first).notify();
 		}
 		
-		ofstream configurationFile;
-
-		configurationFile.open(configurationFilePath);
-
-		configurationFile << "controllerType \"" + cvarManager->getCvar("controllerType").getStringValue() + "\"";
-
-		configurationFile.close();
-		
+		writeCfg();
 	});
 
 	if (ifstream(configurationFilePath)) {
@@ -105,6 +110,21 @@ void ControllerOverlay::onUnload()
 	if (renderImgui) {
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
 	}
+}
+
+void ControllerOverlay::writeCfg()
+{
+	ofstream configurationFile;
+
+	configurationFile.open(configurationFilePath);
+
+	configurationFile << "controllerSize \"" + cvarManager->getCvar("controllerSize").getStringValue() + "\"";
+	configurationFile << "\n";
+	configurationFile << "controllerTransparency \"" + cvarManager->getCvar("controllerTransparency").getStringValue() + "\"";
+	configurationFile << "\n";
+	configurationFile << "controllerType \"" + cvarManager->getCvar("controllerType").getStringValue() + "\"";
+
+	configurationFile.close();
 }
 
 void ControllerOverlay::onTick(string eventName)
@@ -160,81 +180,101 @@ void ControllerOverlay::Render()
 
 void ControllerOverlay::RenderImGui()
 {
+	float alpha = ImGui::GetStyle().Alpha;
+	ImGui::GetStyle().Alpha = controllerTransparency;
+
+	float scale = (doubleSize ? 2 : 1);
+
 	ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowSize(ImVec2(216, 156));
+
+	ImVec2 windowSize = ImVec2(216 * scale, 156 * scale);
+
+	if (doubleSize) {
+		windowSize.x -= 16;
+		windowSize.y -= 32;
+	}
+
+	ImGui::SetNextWindowSize(windowSize);
 
 	ImGui::Begin(GetMenuTitle().c_str(), &renderImgui);
+
+	if (doubleSize) {
+		ImGuiIO io = ImGui::GetIO();
+		ImFont* font = io.Fonts->Fonts[1];
+
+		ImGui::PushFont(font);
+	}
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
 	ImVec2 p = ImGui::GetCursorScreenPos();
 
-	p.x += 12;
+	p.x += 12 * scale;
 
-	float buttonWidth = 48, buttonHeight = 16;
+	float buttonWidth = 48 * scale, buttonHeight = 16 * scale;
 
 	ImVec2 buttonLBPosition = ImVec2(p.x, p.y);
-	ImVec2 buttonRBPosition = ImVec2(p.x + 128, p.y);
+	ImVec2 buttonRBPosition = ImVec2(p.x + 128 * scale, p.y);
 
 	if (inputs["XboxTypeS_LeftTrigger"].pressed) {
 		drawList->AddRectFilled(buttonLBPosition, ImVec2(buttonLBPosition.x + buttonWidth, buttonLBPosition.y + buttonHeight), WHITE, 8, ImDrawCornerFlags_TopLeft);
-		drawList->AddText(ImVec2(buttonLBPosition.x + 18, buttonLBPosition.y + 1), BLACK, inputs["XboxTypeS_LeftTrigger"].name.c_str());
+		drawList->AddText(ImVec2(buttonLBPosition.x + 18 * scale, buttonLBPosition.y + 1 * scale), BLACK, inputs["XboxTypeS_LeftTrigger"].name.c_str());
 	}
 
 	else {
-		drawList->AddRect(buttonLBPosition, ImVec2(buttonLBPosition.x + buttonWidth, buttonLBPosition.y + buttonHeight), WHITE, 8, ImDrawCornerFlags_TopLeft, 2);
-		drawList->AddText(ImVec2(buttonLBPosition.x + 18, buttonLBPosition.y + 1), WHITE, inputs["XboxTypeS_LeftTrigger"].name.c_str());
+		drawList->AddRect(buttonLBPosition, ImVec2(buttonLBPosition.x + buttonWidth, buttonLBPosition.y + buttonHeight), WHITE, 8, ImDrawCornerFlags_TopLeft, 2 * scale);
+		drawList->AddText(ImVec2(buttonLBPosition.x + 18 * scale, buttonLBPosition.y + 1 * scale), WHITE, inputs["XboxTypeS_LeftTrigger"].name.c_str());
 	}
 
 	if (inputs["XboxTypeS_RightTrigger"].pressed) {
 		drawList->AddRectFilled(buttonRBPosition, ImVec2(buttonRBPosition.x + buttonWidth, buttonRBPosition.y + buttonHeight), WHITE, 8, ImDrawCornerFlags_TopRight);
-		drawList->AddText(ImVec2(buttonRBPosition.x + 18, buttonRBPosition.y + 1), BLACK, inputs["XboxTypeS_RightTrigger"].name.c_str());
+		drawList->AddText(ImVec2(buttonRBPosition.x + 18 * scale, buttonRBPosition.y + 1 * scale), BLACK, inputs["XboxTypeS_RightTrigger"].name.c_str());
 	}
 
 	else {
-		drawList->AddRect(buttonRBPosition, ImVec2(buttonRBPosition.x + buttonWidth, buttonRBPosition.y + buttonHeight), WHITE, 8, ImDrawCornerFlags_TopRight, 2);
-		drawList->AddText(ImVec2(buttonRBPosition.x + 18, buttonRBPosition.y + 1), WHITE, inputs["XboxTypeS_RightTrigger"].name.c_str());
+		drawList->AddRect(buttonRBPosition, ImVec2(buttonRBPosition.x + buttonWidth, buttonRBPosition.y + buttonHeight), WHITE, 8, ImDrawCornerFlags_TopRight, 2 * scale);
+		drawList->AddText(ImVec2(buttonRBPosition.x + 18 * scale, buttonRBPosition.y + 1 * scale), WHITE, inputs["XboxTypeS_RightTrigger"].name.c_str());
 	}
 
-	p.y += buttonHeight + 4;
+	p.y += buttonHeight + 4 * scale;
 
 	ImVec2 buttonLTPosition = ImVec2(p.x, p.y);
-	ImVec2 buttonRTPosition = ImVec2(p.x + 128, p.y);
+	ImVec2 buttonRTPosition = ImVec2(p.x + 128 * scale, p.y);
 
 	if (inputs["XboxTypeS_LeftShoulder"].pressed) {
 		drawList->AddRectFilled(buttonLTPosition, ImVec2(buttonLTPosition.x + buttonWidth, buttonLTPosition.y + buttonHeight), WHITE);
-		drawList->AddText(ImVec2(buttonLTPosition.x + 18, buttonLTPosition.y + 1), BLACK, inputs["XboxTypeS_LeftShoulder"].name.c_str());
+		drawList->AddText(ImVec2(buttonLTPosition.x + 18 * scale, buttonLTPosition.y + 1 * scale), BLACK, inputs["XboxTypeS_LeftShoulder"].name.c_str());
 	}
 
 	else {
-		drawList->AddRect(buttonLTPosition, ImVec2(buttonLTPosition.x + buttonWidth, buttonLTPosition.y + buttonHeight), WHITE, 0, 0, 2);
-		drawList->AddText(ImVec2(buttonLTPosition.x + 18, buttonLTPosition.y + 1), WHITE, inputs["XboxTypeS_LeftShoulder"].name.c_str());
+		drawList->AddRect(buttonLTPosition, ImVec2(buttonLTPosition.x + buttonWidth, buttonLTPosition.y + buttonHeight), WHITE, 0, 0, 2 * scale);
+		drawList->AddText(ImVec2(buttonLTPosition.x + 18 * scale, buttonLTPosition.y + 1 * scale), WHITE, inputs["XboxTypeS_LeftShoulder"].name.c_str());
 	}
 
 	if (inputs["XboxTypeS_RightShoulder"].pressed) {
 		drawList->AddRectFilled(buttonRTPosition, ImVec2(buttonRTPosition.x + buttonWidth, buttonRTPosition.y + buttonHeight), WHITE);
-		drawList->AddText(ImVec2(buttonRTPosition.x + 18, buttonRTPosition.y + 1), BLACK, inputs["XboxTypeS_RightShoulder"].name.c_str());
+		drawList->AddText(ImVec2(buttonRTPosition.x + 18 * scale, buttonRTPosition.y + 1 * scale), BLACK, inputs["XboxTypeS_RightShoulder"].name.c_str());
 	}
 
 	else {
-		drawList->AddRect(buttonRTPosition, ImVec2(buttonRTPosition.x + buttonWidth, buttonRTPosition.y + buttonHeight), WHITE, 0, 0, 2);
-		drawList->AddText(ImVec2(buttonRTPosition.x + 18, buttonRTPosition.y + 1), WHITE, inputs["XboxTypeS_RightShoulder"].name.c_str());
+		drawList->AddRect(buttonRTPosition, ImVec2(buttonRTPosition.x + buttonWidth, buttonRTPosition.y + buttonHeight), WHITE, 0, 0, 2 * scale);
+		drawList->AddText(ImVec2(buttonRTPosition.x + 18 * scale, buttonRTPosition.y + 1 * scale), WHITE, inputs["XboxTypeS_RightShoulder"].name.c_str());
 	}
 
-	p.y += buttonHeight + 16;
+	p.y += buttonHeight + 16 * scale;
 
-	p.x -= 8;
+	p.x -= 8 * scale;
 
-	float leftStickRadius = 32;
+	float leftStickRadius = 32 * scale;
 	ImVec2 leftStickCenter = ImVec2(p.x + leftStickRadius, p.y + leftStickRadius);
 
-	drawList->AddCircle(leftStickCenter, 24, WHITE, 32, 2);
+	drawList->AddCircle(leftStickCenter, 24 * scale, WHITE, 32, 2 * scale);
 
-	drawList->AddCircleFilled(ImVec2(leftStickCenter.x + (controllerInput.Steer * 8), leftStickCenter.y + (controllerInput.Pitch * 8)), 20, (inputs["XboxTypeS_LeftThumbStick"].pressed ? GREY : WHITE), 32);
-	drawList->AddCircleFilled(ImVec2(leftStickCenter.x + (controllerInput.Steer * 8), leftStickCenter.y + (controllerInput.Pitch * 8)), 16, (inputs["XboxTypeS_LeftThumbStick"].pressed ? DARKGREY : GREY), 32);
+	drawList->AddCircleFilled(ImVec2(leftStickCenter.x + (controllerInput.Steer * 8 * scale), leftStickCenter.y + (controllerInput.Pitch * 8 * scale)), 20 * scale, (inputs["XboxTypeS_LeftThumbStick"].pressed ? GREY : WHITE), 32);
+	drawList->AddCircleFilled(ImVec2(leftStickCenter.x + (controllerInput.Steer * 8 * scale), leftStickCenter.y + (controllerInput.Pitch * 8 * scale)), 16 * scale, (inputs["XboxTypeS_LeftThumbStick"].pressed ? DARKGREY : GREY), 32);
 
-	float buttonRadius = 12;
-	ImVec2 buttonsCenter = ImVec2(leftStickCenter.x + 128, leftStickCenter.y);
+	float buttonRadius = 12 * scale;
+	ImVec2 buttonsCenter = ImVec2(leftStickCenter.x + 128 * scale, leftStickCenter.y);
 
 	map<string, ImVec2> buttonPositions;
 	map<string, ImVec2> buttonTextPositions;
@@ -245,10 +285,10 @@ void ControllerOverlay::RenderImGui()
 		buttonPositions["XboxTypeS_X"] = ImVec2(buttonsCenter.x - buttonRadius * 2, buttonsCenter.y);
 		buttonPositions["XboxTypeS_Y"] = ImVec2(buttonsCenter.x, buttonsCenter.y - buttonRadius * 2);
 
-		buttonTextPositions["XboxTypeS_A"] = ImVec2(3 + buttonPositions["XboxTypeS_A"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_A"].y - buttonRadius * 0.5f - 1);
-		buttonTextPositions["XboxTypeS_B"] = ImVec2(3 + buttonPositions["XboxTypeS_B"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_B"].y - buttonRadius * 0.5f - 1);
-		buttonTextPositions["XboxTypeS_X"] = ImVec2(3 + buttonPositions["XboxTypeS_X"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_X"].y - buttonRadius * 0.5f - 1);
-		buttonTextPositions["XboxTypeS_Y"] = ImVec2(3 + buttonPositions["XboxTypeS_Y"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_Y"].y - buttonRadius * 0.5f - 1);
+		buttonTextPositions["XboxTypeS_A"] = ImVec2(3 * scale + buttonPositions["XboxTypeS_A"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_A"].y - buttonRadius * 0.5f - 1);
+		buttonTextPositions["XboxTypeS_B"] = ImVec2(3 * scale + buttonPositions["XboxTypeS_B"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_B"].y - buttonRadius * 0.5f - 1);
+		buttonTextPositions["XboxTypeS_X"] = ImVec2(3 * scale + buttonPositions["XboxTypeS_X"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_X"].y - buttonRadius * 0.5f - 1);
+		buttonTextPositions["XboxTypeS_Y"] = ImVec2(3 * scale + buttonPositions["XboxTypeS_Y"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_Y"].y - buttonRadius * 0.5f - 1);
 
 		for (pair<string, ImVec2> buttonPosition : buttonPositions) {
 			if (inputs[buttonPosition.first].pressed) {
@@ -257,7 +297,7 @@ void ControllerOverlay::RenderImGui()
 			}
 
 			else {
-				drawList->AddCircle(buttonPosition.second, buttonRadius, inputs[buttonPosition.first].color, 32, 2);
+				drawList->AddCircle(buttonPosition.second, buttonRadius, inputs[buttonPosition.first].color, 32, 2 * scale);
 				drawList->AddText(buttonTextPositions[buttonPosition.first], inputs[buttonPosition.first].color, inputs[buttonPosition.first].name.c_str());
 			}
 		}
@@ -275,29 +315,35 @@ void ControllerOverlay::RenderImGui()
 			}
 
 			else {
-				drawList->AddCircle(buttonPosition.second, buttonRadius, WHITE, 32, 2);
+				drawList->AddCircle(buttonPosition.second, buttonRadius, WHITE, 32, 2 * scale);
 			}
 
 			if (buttonPosition.first == "XboxTypeS_A") {
-				drawList->AddLine(ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y - 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y + 5), inputs[buttonPosition.first].color, 2.f);
-				drawList->AddLine(ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y + 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y - 5), inputs[buttonPosition.first].color, 2.f);
+				drawList->AddLine(ImVec2(buttonPosition.second.x - 5 * scale, buttonPosition.second.y - 5 * scale), ImVec2(buttonPosition.second.x + 5 * scale, buttonPosition.second.y + 5 * scale), inputs[buttonPosition.first].color, 2 * scale);
+				drawList->AddLine(ImVec2(buttonPosition.second.x - 5 * scale, buttonPosition.second.y + 5 * scale), ImVec2(buttonPosition.second.x + 5 * scale, buttonPosition.second.y - 5 * scale), inputs[buttonPosition.first].color, 2 * scale);
 			}
 
 			else if (buttonPosition.first == "XboxTypeS_B") {
-				drawList->AddCircle(buttonPosition.second, buttonRadius - 6, inputs[buttonPosition.first].color, 16, 2);
+				drawList->AddCircle(buttonPosition.second, buttonRadius - 6 * scale, inputs[buttonPosition.first].color, 16, 2 * scale);
 			}
 
 			else if (buttonPosition.first == "XboxTypeS_X") {
-				drawList->AddQuad(ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y - 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y - 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y + 5), ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y + 5), inputs[buttonPosition.first].color, 2.f);
+				drawList->AddQuad(ImVec2(buttonPosition.second.x - 5 * scale, buttonPosition.second.y - 5 * scale), ImVec2(buttonPosition.second.x + 5 * scale, buttonPosition.second.y - 5 * scale), ImVec2(buttonPosition.second.x + 5 * scale, buttonPosition.second.y + 5 * scale), ImVec2(buttonPosition.second.x - 5 * scale, buttonPosition.second.y + 5 * scale), inputs[buttonPosition.first].color, 2 * scale);
 			}
 
 			else if (buttonPosition.first == "XboxTypeS_Y") {
-				drawList->AddTriangle(ImVec2(buttonPosition.second.x, buttonPosition.second.y - 5), ImVec2(buttonPosition.second.x + 5, buttonPosition.second.y + 4), ImVec2(buttonPosition.second.x - 5, buttonPosition.second.y + 4), inputs[buttonPosition.first].color, 2.f);
+				drawList->AddTriangle(ImVec2(buttonPosition.second.x, buttonPosition.second.y - 5 * scale), ImVec2(buttonPosition.second.x + 5 * scale, buttonPosition.second.y + 4 * scale), ImVec2(buttonPosition.second.x - 5 * scale, buttonPosition.second.y + 4 * scale), inputs[buttonPosition.first].color, 2 * scale);
 			}
 		}
 	}
 
+	if (doubleSize) {
+		ImGui::PopFont();
+	}
+
 	ImGui::End();
+
+	ImGui::GetStyle().Alpha = alpha;
 }
 
 string ControllerOverlay::GetMenuName()

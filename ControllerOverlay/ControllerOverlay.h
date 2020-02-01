@@ -33,6 +33,8 @@ public:
 	void onLoad();
 	void onUnload();
 
+	void writeCfg();
+
 	void onTick(string eventName);
 
 	void Render();
@@ -51,6 +53,9 @@ public:
 
 	enum class ControllerType { Xbox, PS4 };
 	ControllerType controllerType;
+
+	float controllerTransparency = 1;
+	bool doubleSize;
 
 	map<string, Input> inputs;
 	ControllerInput controllerInput;
