@@ -24,7 +24,7 @@ namespace ImGui {
 		ImGuiWindow* win = GetCurrentWindow();
 		const ImU32 inactive_color = ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Button]);
 		const ImU32 active_color = ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_ButtonHovered]);
-		const ImU32 line_color = ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_ColumnActive]);
+		const ImU32 line_color = ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_SeparatorActive]);
 		bool changed = false;
 		ImVec2 cursor_pos = win->DC.CursorPos;
 
@@ -100,7 +100,7 @@ namespace ImGui {
 		// @r-lyeh {
 		if (t >= 0) {
 			if (t > s_max_timeline_value) t = s_max_timeline_value; t /= s_max_timeline_value;
-			const ImU32 line_color = ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_ColumnActive]);
+			const ImU32 line_color = ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_SeparatorActive]);
 			ImVec2 a(win->Pos.x + GetWindowContentRegionMin().x + t * GetWindowContentRegionWidth(), GetWindowContentRegionMin().y + win->Pos.y + win->Scroll.y);
 			ImVec2 b(win->Pos.x + GetWindowContentRegionMin().x + t * GetWindowContentRegionWidth(), GetWindowContentRegionMax().y + win->Pos.y + win->Scroll.y);
 			win->DrawList->AddLine(a, b, line_color);

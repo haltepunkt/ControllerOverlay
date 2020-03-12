@@ -500,14 +500,14 @@ bool ColorCombo(const char* label,ImVec4 *pColorOut,bool supportsAlpha,float wid
 
         static bool IsPopupOpen(ImGuiID id) {
             ImGuiContext& g = *GImGui;
-            return g.OpenPopupStack.Size > g.CurrentPopupStack.Size && g.OpenPopupStack[g.CurrentPopupStack.Size].PopupId == id;
+            return g.OpenPopupStack.Size > g.BeginPopupStack.Size && g.OpenPopupStack[g.BeginPopupStack.Size].PopupId == id;
         }
         static void ClosePopupToLevel(int remaining)    {
             ImGuiContext& g = *GImGui;
             if (remaining > 0)
                 ImGui::FocusWindow(g.OpenPopupStack[remaining-1].Window);
             else
-                ImGui::FocusWindow(g.OpenPopupStack[0].ParentWindow);
+                ImGui::FocusWindow(g.OpenPopupStack[0].SourceWindow);
             g.OpenPopupStack.resize(remaining);
         }
         static void ClosePopup(ImGuiID id)  {
@@ -518,7 +518,7 @@ bool ColorCombo(const char* label,ImVec4 *pColorOut,bool supportsAlpha,float wid
         }
         static bool BeginPopupEx(const char* str_id, ImGuiWindowFlags extra_flags)  {
             ImGuiContext& g = *GImGui;
-            if (g.OpenPopupStack.Size <= g.CurrentPopupStack.Size) // Early out for performance
+            if (g.OpenPopupStack.Size <= g.BeginPopupStack.Size) // Early out for performance
             {
                 //g.NextWindowData.Clear(); // We behave like Begin() and need to consume those values
                 return false;
@@ -2446,7 +2446,7 @@ bool InputComboWithAutoCompletion(const char* label, int *current_item, size_t a
         ImGui::SameLine();
         //ImGui::Text("%s",label);    // This doesn't cut "##". We must add all this cucumberson and error-prone code to workaround this (for correct alignment and isHovered detection):
         const ImVec2 label_size = CalcTextSize(label, NULL, true);
-        if (label_size.x>0) ImGui::RenderText(ImVec2(window->DC.CursorPos.x,window->DC.CursorPos.y+window->DC.CurrentLineTextBaseOffset),label);
+        if (label_size.x>0) ImGui::RenderText(ImVec2(window->DC.CursorPos.x,window->DC.CursorPos.y+window->DC.CurrLineTextBaseOffset),label);
         const ImRect label_bb(window->DC.CursorPos,ImVec2(window->DC.CursorPos.x + label_size.x, window->DC.CursorPos.y + label_size.y + ImGui::GetStyle().FramePadding.y*2.0f));
         ImGui::ItemSize(label_bb, ImGui::GetStyle().FramePadding.y);
         const ImGuiID labelID = 0;  // is this allowed ?
