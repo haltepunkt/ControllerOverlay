@@ -54,8 +54,9 @@ public:
 	enum class ControllerType { Xbox, PS4 };
 	ControllerType controllerType;
 
-	float controllerTransparency = 1;
-	bool doubleSize;
+	bool doubleSize = false;
+	bool titleBar = true;
+	float transparency = 1.0f;
 
 	map<string, Input> inputs;
 	ControllerInput controllerInput;

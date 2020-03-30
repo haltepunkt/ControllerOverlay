@@ -47,9 +47,15 @@ void ControllerOverlay::onLoad()
 
 		writeCfg();
 	});
+
+	cvarManager->registerCvar("controllerTitleBar", "1").addOnValueChanged([this](string old, CVarWrapper now) {
+		titleBar = (cvarManager->getCvar("controllerTitleBar").getStringValue() == "1");
+
+		writeCfg();
+	});
 	
 	cvarManager->registerCvar("controllerTransparency", "1.0").addOnValueChanged([this](string old, CVarWrapper now) {
-		controllerTransparency = cvarManager->getCvar("controllerTransparency").getFloatValue();
+		transparency = cvarManager->getCvar("controllerTransparency").getFloatValue();
 
 		writeCfg();
 	});
@@ -120,6 +126,8 @@ void ControllerOverlay::writeCfg()
 
 	configurationFile << "controllerSize \"" + cvarManager->getCvar("controllerSize").getStringValue() + "\"";
 	configurationFile << "\n";
+	configurationFile << "controllerTitleBar \"" + cvarManager->getCvar("controllerTitleBar").getStringValue() + "\"";
+	configurationFile << "\n";
 	configurationFile << "controllerTransparency \"" + cvarManager->getCvar("controllerTransparency").getStringValue() + "\"";
 	configurationFile << "\n";
 	configurationFile << "controllerType \"" + cvarManager->getCvar("controllerType").getStringValue() + "\"";
@@ -180,14 +188,19 @@ void ControllerOverlay::Render()
 
 void ControllerOverlay::RenderImGui()
 {
-	float alpha = ImGui::GetStyle().Alpha;
-	ImGui::GetStyle().Alpha = controllerTransparency;
+	float scale = (doubleSize ? 2.0f : 1.0f);
 
-	float scale = (doubleSize ? 2 : 1);
+	ImGui::SetNextWindowBgAlpha(transparency);
 
 	ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_FirstUseEver);
 
-	ImVec2 windowSize = ImVec2(216 * scale, 156 * scale);
+	float windowHeight = 156 * scale;
+
+	if (!titleBar) {
+		windowHeight -= ImGui::GetFrameHeight();
+	}
+
+	ImVec2 windowSize = ImVec2(216 * scale, windowHeight);
 
 	if (doubleSize) {
 		windowSize.x -= 16;
@@ -196,13 +209,24 @@ void ControllerOverlay::RenderImGui()
 
 	ImGui::SetNextWindowSize(windowSize);
 
-	ImGui::Begin(GetMenuTitle().c_str(), &renderImgui);
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
+
+	if (!titleBar) {
+		windowFlags = windowFlags | ImGuiWindowFlags_NoTitleBar;
+	}
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+
+	ImGui::Begin(GetMenuTitle().c_str(), &renderImgui, windowFlags);
 
 	if (doubleSize) {
 		ImGuiIO io = ImGui::GetIO();
-		ImFont* font = io.Fonts->Fonts[1];
 
-		ImGui::PushFont(font);
+		if (io.Fonts->Fonts.size() >= 1) {
+			ImFont* font = io.Fonts->Fonts[1];
+
+			ImGui::PushFont(font);
+		}
 	}
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
@@ -341,9 +365,9 @@ void ControllerOverlay::RenderImGui()
 		ImGui::PopFont();
 	}
 
-	ImGui::End();
+	ImGui::PopStyleVar();
 
-	ImGui::GetStyle().Alpha = alpha;
+	ImGui::End();
 }
 
 string ControllerOverlay::GetMenuName()
