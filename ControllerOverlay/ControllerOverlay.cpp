@@ -1,6 +1,6 @@
 #include "ControllerOverlay.h"
 
-BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.4", 0)
+BAKKESMOD_PLUGIN(ControllerOverlay, "Controller Overlay", "1.5", 0)
 
 /*
 	https://docs.unrealengine.com/udk/Three/KeyBinds.html
