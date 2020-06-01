@@ -42,32 +42,26 @@ void ControllerOverlay::onLoad()
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
 	}, 1);
 
-	cvarManager->registerCvar("controllerSize", "1").addOnValueChanged([this](string old, CVarWrapper now) {
-		doubleSize = (cvarManager->getCvar("controllerSize").getStringValue() == "2");
-
-		writeCfg();
-	});
-
 	cvarManager->registerCvar("controllerTitleBar", "1").addOnValueChanged([this](string old, CVarWrapper now) {
-		titleBar = (cvarManager->getCvar("controllerTitleBar").getStringValue() == "1");
+		titleBar = (now.getStringValue() == "1");
 
 		writeCfg();
 	});
 	
 	cvarManager->registerCvar("controllerTransparency", "1.0").addOnValueChanged([this](string old, CVarWrapper now) {
-		transparency = cvarManager->getCvar("controllerTransparency").getFloatValue();
+		transparency = now.getFloatValue();
 
 		writeCfg();
 	});
 	
 	cvarManager->registerCvar("controllerType", "xbox").addOnValueChanged([this](string old, CVarWrapper now) {
-		if (cvarManager->getCvar("controllerType").getStringValue() == "ps4") {
-			controllerType = ControllerOverlay::ControllerType::PS4;
+		if (now.getStringValue() == "ps4") {
+			type = 1;
 			
-			inputs["XboxTypeS_A"] = { 0, false, BLUE, "Cross" };
-			inputs["XboxTypeS_B"] = { 0, false, RED, "Circle" };
-			inputs["XboxTypeS_X"] = { 0, false, PURPLE, "Square" };
-			inputs["XboxTypeS_Y"] = { 0, false, DARKGREEN, "Triangle" };
+			inputs["XboxTypeS_A"] = { 0, false, BLUE, "-" };
+			inputs["XboxTypeS_B"] = { 0, false, RED, "-" };
+			inputs["XboxTypeS_X"] = { 0, false, PURPLE, "-" };
+			inputs["XboxTypeS_Y"] = { 0, false, DARKGREEN, "-" };
 			inputs["XboxTypeS_LeftShoulder"] = { 0, false, WHITE, "L1" };
 			inputs["XboxTypeS_RightShoulder"] = { 0, false, WHITE, "R1" };
 			inputs["XboxTypeS_LeftTrigger"] = { 0, false, WHITE, "L2" };
@@ -76,7 +70,7 @@ void ControllerOverlay::onLoad()
 		}
 
 		else {
-			controllerType = ControllerOverlay::ControllerType::Xbox;
+			type = 0;
 
 			inputs["XboxTypeS_A"] = { 0, false, GREEN, "A" };
 			inputs["XboxTypeS_B"] = { 0, false, RED, "B" };
@@ -100,6 +94,18 @@ void ControllerOverlay::onLoad()
 		writeCfg();
 	});
 
+	cvarManager->registerCvar("controllerSize", "0").addOnValueChanged([this](string old, CVarWrapper now) {
+		if (now.getIntValue() == 0 || now.getIntValue() == 1) {
+			size = now.getIntValue();
+		}
+
+		else {
+			size = 0;
+		}
+
+		writeCfg();
+	});
+
 	if (ifstream(configurationFilePath)) {
 		cvarManager->loadCfg(configurationFilePath);
 	}
@@ -113,7 +119,9 @@ void ControllerOverlay::onLoad()
 
 void ControllerOverlay::onUnload()
 {
-	if (renderImgui) {
+	writeCfg();
+
+	if (renderControllerOverlay) {
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
 	}
 }
@@ -124,13 +132,21 @@ void ControllerOverlay::writeCfg()
 
 	configurationFile.open(configurationFilePath);
 
-	configurationFile << "controllerSize \"" + cvarManager->getCvar("controllerSize").getStringValue() + "\"";
+	configurationFile << "controllerTitleBar \"" + to_string(titleBar) + "\"";
 	configurationFile << "\n";
-	configurationFile << "controllerTitleBar \"" + cvarManager->getCvar("controllerTitleBar").getStringValue() + "\"";
+	configurationFile << "controllerTransparency \"" + to_string(transparency) + "\"";
 	configurationFile << "\n";
-	configurationFile << "controllerTransparency \"" + cvarManager->getCvar("controllerTransparency").getStringValue() + "\"";
+
+	if (type == 1) {
+		configurationFile << "controllerType \"ps4\"";
+	}
+
+	else {
+		configurationFile << "controllerType \"xbox\"";
+	}
+
 	configurationFile << "\n";
-	configurationFile << "controllerType \"" + cvarManager->getCvar("controllerType").getStringValue() + "\"";
+	configurationFile << "controllerSize \"" + to_string(size) + "\"";
 
 	configurationFile.close();
 }
@@ -161,7 +177,7 @@ void ControllerOverlay::onTick(string eventName)
 
 void ControllerOverlay::Render()
 {
-	if (!renderImgui) {
+	if (!renderControllerOverlay) {
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
 
 		return;
@@ -192,11 +208,26 @@ void ControllerOverlay::Render()
 
 void ControllerOverlay::RenderImGui()
 {
-	float scale = (doubleSize ? 2.0f : 1.0f);
+	if (renderSettings) {
+		ImGui::SetNextWindowPos(ImVec2(128, 256), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(0, 0));
+
+		ImGui::Begin((GetMenuTitle() + " - Settings").c_str(), &renderSettings, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+
+		ImGui::Checkbox("Titlebar", &titleBar);
+		ImGui::SliderFloat("Transparency", &transparency, 0.f, 1.f, "%.2f");
+		const char* types[] = { "Xbox", "PS4" };
+		ImGui::Combo("Type", &type, types, IM_ARRAYSIZE(types));
+		const char* sizes[] = { "Small @1x", "Large @2x" };
+		ImGui::Combo("Size", &size, sizes, IM_ARRAYSIZE(sizes));
+		ImGui::End();
+	}
+
+	float scale = (size == 1 ? 2.0f : 1.0f);
 
 	ImGui::SetNextWindowBgAlpha(transparency);
 
-	ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(128, 128), ImGuiCond_FirstUseEver);
 
 	float windowHeight = 156 * scale;
 
@@ -206,7 +237,7 @@ void ControllerOverlay::RenderImGui()
 
 	ImVec2 windowSize = ImVec2(216 * scale, windowHeight);
 
-	if (doubleSize) {
+	if (size == 1) {
 		windowSize.x -= 16;
 		windowSize.y -= 32;
 	}
@@ -221,9 +252,11 @@ void ControllerOverlay::RenderImGui()
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 
-	ImGui::Begin(GetMenuTitle().c_str(), &renderImgui, windowFlags);
+	ImGui::Begin(GetMenuTitle().c_str(), &renderControllerOverlay, windowFlags);
 
-	if (doubleSize) {
+	ImVec2 cursorPosition = ImGui::GetCursorPos();
+
+	if (size == 1) {
 		ImGuiIO io = ImGui::GetIO();
 
 		if (io.Fonts->Fonts.size() >= 1) {
@@ -307,7 +340,7 @@ void ControllerOverlay::RenderImGui()
 	map<string, ImVec2> buttonPositions;
 	map<string, ImVec2> buttonTextPositions;
 
-	if (controllerType == ControllerOverlay::ControllerType::Xbox) {
+	if (type == 0) {
 		buttonPositions["XboxTypeS_A"] = ImVec2(buttonsCenter.x, buttonsCenter.y + buttonRadius * 2);
 		buttonPositions["XboxTypeS_B"] = ImVec2(buttonsCenter.x + buttonRadius * 2, buttonsCenter.y);
 		buttonPositions["XboxTypeS_X"] = ImVec2(buttonsCenter.x - buttonRadius * 2, buttonsCenter.y);
@@ -331,7 +364,7 @@ void ControllerOverlay::RenderImGui()
 		}
 	}
 
-	else if (controllerType == ControllerOverlay::ControllerType::PS4) {
+	else if (type == 1) {
 		buttonPositions["XboxTypeS_A"] = ImVec2(buttonsCenter.x, buttonsCenter.y + buttonRadius * 2);
 		buttonPositions["XboxTypeS_B"] = ImVec2(buttonsCenter.x + buttonRadius * 2, buttonsCenter.y);
 		buttonPositions["XboxTypeS_X"] = ImVec2(buttonsCenter.x - buttonRadius * 2, buttonsCenter.y);
@@ -365,7 +398,15 @@ void ControllerOverlay::RenderImGui()
 		}
 	}
 
-	if (doubleSize) {
+	ImGui::SetCursorPos(ImVec2((size == 0 ? cursorPosition.x + 73 : cursorPosition.x + 156), cursorPosition.y + 8 * scale));
+
+	if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+		if (ImGui::Button("Settings")) {
+			renderSettings = !renderSettings;
+		}
+	}
+
+	if (size == 1) {
 		ImGui::PopFont();
 	}
 
@@ -401,10 +442,10 @@ bool ControllerOverlay::IsActiveOverlay()
 
 void ControllerOverlay::OnOpen()
 {
-	renderImgui = true;
+	renderControllerOverlay = true;
 }
 
 void ControllerOverlay::OnClose()
 {
-	renderImgui = false;
+	renderControllerOverlay = false;
 }

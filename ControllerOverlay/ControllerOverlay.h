@@ -47,16 +47,15 @@ public:
 	void OnOpen();
 	void OnClose();
 
-	bool renderImgui = false;
+	bool renderControllerOverlay = false;
+	bool renderSettings = false;
 
 	string configurationFilePath = "./bakkesmod/cfg/controlleroverlay.cfg";
 
-	enum class ControllerType { Xbox, PS4 };
-	ControllerType controllerType;
-
-	bool doubleSize = false;
 	bool titleBar = true;
 	float transparency = 1.0f;
+	int type = 0;
+	int size = 0;
 
 	map<string, Input> inputs;
 	ControllerInput controllerInput;
