@@ -137,22 +137,24 @@ void ControllerOverlay::writeCfg()
 
 void ControllerOverlay::onTick(string eventName)
 {
-	if (gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame()) {
-		for (const pair<const string, Input>& input : inputs) {
-			if (input.second.index > 0) {
-				inputs[input.first].pressed = gameWrapper->IsKeyPressed(input.second.index);
+	if (!gameWrapper->IsInCustomTraining()) {
+		if (gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame()) {
+			for (const pair<const string, Input>& input : inputs) {
+				if (input.second.index > 0) {
+					inputs[input.first].pressed = gameWrapper->IsKeyPressed(input.second.index);
+				}
 			}
-		}
 
-		CarWrapper car = gameWrapper->GetLocalCar();
+			CarWrapper car = gameWrapper->GetLocalCar();
 
-		if (!car.IsNull()) {
-			controllerInput = car.GetInput();
-		}
+			if (!car.IsNull()) {
+				controllerInput = car.GetInput();
+			}
 
-		else {
-			controllerInput.Steer = 0;
-			controllerInput.Pitch = 0;
+			else {
+				controllerInput.Steer = 0;
+				controllerInput.Pitch = 0;
+			}
 		}
 	}
 }
@@ -165,22 +167,24 @@ void ControllerOverlay::Render()
 		return;
 	}
 
-	if (gameWrapper->IsInOnlineGame()) {
-		ServerWrapper server = gameWrapper->GetOnlineGame();
+	if (!gameWrapper->IsInCustomTraining()) {
+		if (gameWrapper->IsInOnlineGame()) {
+			ServerWrapper server = gameWrapper->GetOnlineGame();
 
-		if (!server.IsNull()) {
-			if (!server.GetbMatchEnded()) {
-				ControllerOverlay::RenderImGui();
+			if (!server.IsNull()) {
+				if (!server.GetbMatchEnded()) {
+					ControllerOverlay::RenderImGui();
+				}
 			}
 		}
-	}
 
-	else if (gameWrapper->IsInGame()) {
-		ServerWrapper server = gameWrapper->GetGameEventAsServer();
+		else if (gameWrapper->IsInGame()) {
+			ServerWrapper server = gameWrapper->GetGameEventAsServer();
 
-		if (!server.IsNull()) {
-			if (!server.GetbMatchEnded()) {
-				ControllerOverlay::RenderImGui();
+			if (!server.IsNull()) {
+				if (!server.GetbMatchEnded()) {
+					ControllerOverlay::RenderImGui();
+				}
 			}
 		}
 	}
