@@ -1,4 +1,4 @@
-#pragma comment(lib, "BakkesMod.lib")
+#pragma comment(lib, "pluginsdk.lib")
 
 #include <fstream>
 
@@ -18,13 +18,11 @@
 #define YELLOW ImColor(255, 255, 0, 255)
 #define PURPLE ImColor(128, 0, 128, 255)
 
-using namespace placeholders;
-
 struct Input {
 	int index;
 	bool pressed;
 	ImColor color;
-	string name;
+	std::string name;
 };
 
 class ControllerOverlay : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginWindow
@@ -35,12 +33,12 @@ public:
 
 	void writeCfg();
 
-	void onTick(string eventName);
+	void onTick(std::string eventName);
 
 	void Render();
 	void RenderImGui();
-	string GetMenuName();
-	string GetMenuTitle();
+	std::string GetMenuName();
+	std::string GetMenuTitle();
 	void SetImGuiContext(uintptr_t ctx);
 	bool ShouldBlockInput();
 	bool IsActiveOverlay();
@@ -50,13 +48,13 @@ public:
 	bool renderControllerOverlay = false;
 	bool renderSettings = false;
 
-	string configurationFilePath = "./bakkesmod/cfg/controlleroverlay.cfg";
+	std::string configurationFilePath = "./bakkesmod/cfg/controlleroverlay.cfg";
 
 	bool titleBar = true;
 	float transparency = 1.0f;
 	int type = 0;
 	int size = 0;
 
-	map<string, Input> inputs;
+	std::map<std::string, Input> inputs;
 	ControllerInput controllerInput;
 };

@@ -42,19 +42,19 @@ void ControllerOverlay::onLoad()
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
 	}, 1);
 
-	cvarManager->registerCvar("controllerTitleBar", "1").addOnValueChanged([this](string old, CVarWrapper now) {
+	cvarManager->registerCvar("controllerTitleBar", "1").addOnValueChanged([this](std::string old, CVarWrapper now) {
 		titleBar = (now.getStringValue() == "1");
 
 		writeCfg();
 	});
 	
-	cvarManager->registerCvar("controllerTransparency", "1.0").addOnValueChanged([this](string old, CVarWrapper now) {
+	cvarManager->registerCvar("controllerTransparency", "1.0").addOnValueChanged([this](std::string old, CVarWrapper now) {
 		transparency = now.getFloatValue();
 
 		writeCfg();
 	});
 	
-	cvarManager->registerCvar("controllerType", "xbox").addOnValueChanged([this](string old, CVarWrapper now) {
+	cvarManager->registerCvar("controllerType", "xbox").addOnValueChanged([this](std::string old, CVarWrapper now) {
 		if (now.getStringValue() == "ps4") {
 			type = 1;
 			
@@ -83,8 +83,8 @@ void ControllerOverlay::onLoad()
 			inputs["XboxTypeS_LeftThumbStick"] = { 0, false, GREY, "LS" };
 		}
 
-		for (const pair<const string, Input>& input : inputs) {
-			cvarManager->registerCvar(input.first, input.first).addOnValueChanged([this](string old, CVarWrapper now) {
+		for (const std::pair<const std::string, Input>& input : inputs) {
+			cvarManager->registerCvar(input.first, input.first).addOnValueChanged([this](std::string old, CVarWrapper now) {
 				inputs[now.getStringValue()].index = gameWrapper->GetFNameIndexByString(now.getStringValue());
 				});
 
@@ -94,7 +94,7 @@ void ControllerOverlay::onLoad()
 		writeCfg();
 	});
 
-	cvarManager->registerCvar("controllerSize", "0").addOnValueChanged([this](string old, CVarWrapper now) {
+	cvarManager->registerCvar("controllerSize", "0").addOnValueChanged([this](std::string old, CVarWrapper now) {
 		if (now.getIntValue() == 0 || now.getIntValue() == 1) {
 			size = now.getIntValue();
 		}
@@ -106,7 +106,7 @@ void ControllerOverlay::onLoad()
 		writeCfg();
 	});
 
-	if (ifstream(configurationFilePath)) {
+	if (std::ifstream(configurationFilePath)) {
 		cvarManager->loadCfg(configurationFilePath);
 	}
 
@@ -114,7 +114,7 @@ void ControllerOverlay::onLoad()
 		cvarManager->getCvar("controllerType").notify();
 	}
 
-	gameWrapper->HookEvent("Function Engine.GameViewportClient.Tick", bind(&ControllerOverlay::onTick, this, placeholders::_1));
+	gameWrapper->HookEvent("Function Engine.GameViewportClient.Tick", bind(&ControllerOverlay::onTick, this, std::placeholders::_1));
 }
 
 void ControllerOverlay::onUnload()
@@ -128,13 +128,13 @@ void ControllerOverlay::onUnload()
 
 void ControllerOverlay::writeCfg()
 {
-	ofstream configurationFile;
+	std::ofstream configurationFile;
 
 	configurationFile.open(configurationFilePath);
 
-	configurationFile << "controllerTitleBar \"" + to_string(titleBar) + "\"";
+	configurationFile << "controllerTitleBar \"" + std::to_string(titleBar) + "\"";
 	configurationFile << "\n";
-	configurationFile << "controllerTransparency \"" + to_string(transparency) + "\"";
+	configurationFile << "controllerTransparency \"" + std::to_string(transparency) + "\"";
 	configurationFile << "\n";
 
 	if (type == 1) {
@@ -146,16 +146,16 @@ void ControllerOverlay::writeCfg()
 	}
 
 	configurationFile << "\n";
-	configurationFile << "controllerSize \"" + to_string(size) + "\"";
+	configurationFile << "controllerSize \"" + std::to_string(size) + "\"";
 
 	configurationFile.close();
 }
 
-void ControllerOverlay::onTick(string eventName)
+void ControllerOverlay::onTick(std::string eventName)
 {
 	if (!gameWrapper->IsInCustomTraining()) {
 		if (gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame()) {
-			for (const pair<const string, Input>& input : inputs) {
+			for (const std::pair<const std::string, Input>& input : inputs) {
 				if (input.second.index > 0) {
 					inputs[input.first].pressed = gameWrapper->IsKeyPressed(input.second.index);
 				}
@@ -337,8 +337,8 @@ void ControllerOverlay::RenderImGui()
 	float buttonRadius = 12 * scale;
 	ImVec2 buttonsCenter = ImVec2(leftStickCenter.x + 128 * scale, leftStickCenter.y);
 
-	map<string, ImVec2> buttonPositions;
-	map<string, ImVec2> buttonTextPositions;
+	std::map<std::string, ImVec2> buttonPositions;
+	std::map<std::string, ImVec2> buttonTextPositions;
 
 	if (type == 0) {
 		buttonPositions["XboxTypeS_A"] = ImVec2(buttonsCenter.x, buttonsCenter.y + buttonRadius * 2);
@@ -351,7 +351,7 @@ void ControllerOverlay::RenderImGui()
 		buttonTextPositions["XboxTypeS_X"] = ImVec2(3 * scale + buttonPositions["XboxTypeS_X"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_X"].y - buttonRadius * 0.5f - 1);
 		buttonTextPositions["XboxTypeS_Y"] = ImVec2(3 * scale + buttonPositions["XboxTypeS_Y"].x - buttonRadius * 0.5f, buttonPositions["XboxTypeS_Y"].y - buttonRadius * 0.5f - 1);
 
-		for (pair<string, ImVec2> buttonPosition : buttonPositions) {
+		for (std::pair<std::string, ImVec2> buttonPosition : buttonPositions) {
 			if (inputs[buttonPosition.first].pressed) {
 				drawList->AddCircleFilled(buttonPosition.second, buttonRadius, inputs[buttonPosition.first].color, 32);
 				drawList->AddText(buttonTextPositions[buttonPosition.first], BLACK, inputs[buttonPosition.first].name.c_str());
@@ -370,7 +370,7 @@ void ControllerOverlay::RenderImGui()
 		buttonPositions["XboxTypeS_X"] = ImVec2(buttonsCenter.x - buttonRadius * 2, buttonsCenter.y);
 		buttonPositions["XboxTypeS_Y"] = ImVec2(buttonsCenter.x, buttonsCenter.y - buttonRadius * 2);
 
-		for (pair<string, ImVec2> buttonPosition : buttonPositions) {
+		for (std::pair<std::string, ImVec2> buttonPosition : buttonPositions) {
 			if (inputs[buttonPosition.first].pressed) {
 				drawList->AddCircleFilled(buttonPosition.second, buttonRadius, WHITE, 32);
 			}
@@ -415,12 +415,12 @@ void ControllerOverlay::RenderImGui()
 	ImGui::End();
 }
 
-string ControllerOverlay::GetMenuName()
+std::string ControllerOverlay::GetMenuName()
 {
 	return "controlleroverlay";
 }
 
-string ControllerOverlay::GetMenuTitle()
+std::string ControllerOverlay::GetMenuTitle()
 {
 	return "Controller Overlay";
 }
