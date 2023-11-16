@@ -67,6 +67,7 @@ void ControllerOverlay::onLoad()
 			inputs["XboxTypeS_LeftTrigger"] = { 0, false, WHITE, "L2" };
 			inputs["XboxTypeS_RightTrigger"] = { 0, false, WHITE, "R2" };
 			inputs["XboxTypeS_LeftThumbStick"] = { 0, false, GREY, "L3" };
+			inputs["XboxTypeS_RightThumbStick"] = { 0, false, GREY, "L3" };
 		}
 
 		else {
@@ -81,6 +82,7 @@ void ControllerOverlay::onLoad()
 			inputs["XboxTypeS_LeftTrigger"] = { 0, false, WHITE, "LT" };
 			inputs["XboxTypeS_RightTrigger"] = { 0, false, WHITE, "RT" };
 			inputs["XboxTypeS_LeftThumbStick"] = { 0, false, GREY, "LS" };
+			inputs["XboxTypeS_RightThumbStick"] = { 0, false, GREY, "L3" };
 		}
 
 		for (const std::pair<const std::string, Input>& input : inputs) {
@@ -339,6 +341,20 @@ void ControllerOverlay::RenderImGui()
 
 	std::map<std::string, ImVec2> buttonPositions;
 	std::map<std::string, ImVec2> buttonTextPositions;
+
+	float rightStickRadius = 32 * scale;
+	ImVec2 rightStickCenter = ImVec2(p.x + 160 * scale, p.y + rightStickRadius); // Adjust as needed
+	
+	drawList->AddCircle(rightStickCenter, 24 * scale, WHITE, 32, 2 * scale);
+	
+	drawList->AddCircleFilled(ImVec2(rightStickCenter.x + (controllerInput.Steer * 8 * scale), rightStickCenter.y + (controllerInput.Pitch * 8 * scale)), 20 * scale, (inputs["XboxTypeS_LeftThumbStick"].pressed ? GREY : WHITE), 32);
+	drawList->AddCircleFilled(ImVec2(rightStickCenter.x + (controllerInput.Steer * 8 * scale), rightStickCenter.y + (controllerInput.Pitch * 8 * scale)), 16 * scale, (inputs["XboxTypeS_LeftThumbStick"].pressed ? DARKGREY : GREY), 32);
+	
+	float rightButtonRadius = 12 * scale;
+	ImVec2 rightButtonsCenter = ImVec2(rightStickCenter.x + 128 * scale, rightStickCenter.y);
+	
+	std::map<std::string, ImVec2> ButtonPositions;
+	std::map<std::string, ImVec2> ButtonTextPositions;
 
 	if (type == 0) {
 		buttonPositions["XboxTypeS_A"] = ImVec2(buttonsCenter.x, buttonsCenter.y + buttonRadius * 2);
